@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import GUI from 'lil-gui';
+import fireworkVertex from './shaders/vertex.glsl';
+import fireworkFragment from './shaders/fragment.glsl';
 
 /**
  * Base
@@ -24,12 +26,13 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight + 1,
 };
+sizes.resolution = new THREE.Vector2(sizes.width, sizes.height);
 
 window.addEventListener('resize', () => {
   // Update sizes
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight + 1;
-
+  sizes.resolution.set(sizes.width, sizes.height);
   // Update camera
   camera.aspect = sizes.width / sizes.height;
   camera.updateProjectionMatrix();
@@ -71,7 +74,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
  */
 const count = 100;
 const position = 0;
-const createFireworks = (count, position) => {
+const createFireworks = (count, position, size) => {
   const positionArray = new Float32Array(count * 3);
 
   for (let i = 0; i < count; i++) {
@@ -86,15 +89,22 @@ const createFireworks = (count, position) => {
     'position',
     new THREE.Float32BufferAttribute(positionArray, 3)
   );
-  const material = new THREE.PointsMaterial();
+  const material = new THREE.ShaderMaterial({
+    vertexShader: fireworkVertex,
+    fragmentShader: fireworkFragment,
+    uniforms: {
+      uSize: new THREE.Uniform(size),
+      uResolution: new THREE.Uniform(sizes.resolution),
+    },
+  });
 
   // Points
   const firework = new THREE.Points(geometry, material);
-  // firework.position.copy(position);
+  firework.position.copy(position);
   scene.add(firework);
 };
 
-createFireworks(count, position);
+createFireworks(count, new THREE.Vector3(), 100);
 /**
  * Animate
  */
