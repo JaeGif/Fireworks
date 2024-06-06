@@ -5,21 +5,31 @@ import fireworkVertex from './shaders/vertex.glsl';
 import fireworkFragment from './shaders/fragment.glsl';
 import gsap from 'gsap';
 import { Sky } from 'three/addons/objects/Sky.js';
-
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 /**
  * Base
  */
 // Debug
 
 let gui;
-
 if (window.location.hash === '#debug') gui = new GUI({ width: 340 });
+const gltfLoader = new GLTFLoader();
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
 
 // Scene
 const scene = new THREE.Scene();
+
+// import suzanne mesh
+
+let suzanne = null;
+const vertices = new Float32Array();
+
+gltfLoader.load('./suzanne.glb', (gltf) => {
+  console.log(gltf);
+  suzanne = gltf.scene;
+});
 
 // Loaders
 const textureLoader = new THREE.TextureLoader();
@@ -99,7 +109,7 @@ const createFireworks = (count, position, size, texture, radius, color) => {
   const positionArray = new Float32Array(count * 3);
   const sizesArray = new Float32Array(count);
   const timeMultipliersArray = new Float32Array(count);
-
+  // const suzanneArray = suzanne.children[0].geometry.attributes.position.array;
   for (let i = 0; i < count; i++) {
     // need to create 1 spherical/obj
     const i3 = i * 3;
@@ -111,7 +121,7 @@ const createFireworks = (count, position, size, texture, radius, color) => {
     );
 
     const position = new THREE.Vector3();
-    position.setFromSpherical(spherical);
+    // position.setFromSpherical(spherical);
 
     positionArray[i3 + 0] = position.x;
     positionArray[i3 + 1] = position.y;
@@ -122,12 +132,14 @@ const createFireworks = (count, position, size, texture, radius, color) => {
     timeMultipliersArray[i] = 1 + Math.random(); // add the 1 so the random particles
     // lifespan is faster
   }
-  const geometry = new THREE.BufferGeometry();
-
+  const geometry = suzanne.children[0].geometry;
+  console.log(geometry);
+  //
+  /* 
   geometry.setAttribute(
     'position',
-    new THREE.Float32BufferAttribute(positionArray, 3)
-  );
+    new THREE.Float32BufferAttribute(suzanneArray, 3)
+  ); */
   geometry.setAttribute(
     'aSize',
     new THREE.Float32BufferAttribute(sizesArray, 1)
@@ -156,6 +168,11 @@ const createFireworks = (count, position, size, texture, radius, color) => {
 
   // Points
   const firework = new THREE.Points(geometry, material);
+  firework.rotation.set(
+    Math.random() - 0.5,
+    Math.random() - 0.5,
+    Math.random() - 0.5
+  );
   firework.position.copy(position);
   scene.add(firework);
 
@@ -179,7 +196,7 @@ const createFireworks = (count, position, size, texture, radius, color) => {
 };
 
 const createRandomFirework = () => {
-  const count = Math.round(400 + Math.random() * 1000);
+  const count = 2886;
   const position = new THREE.Vector3(
     (Math.random() - 0.5) * 2,
     Math.random(),
