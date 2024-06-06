@@ -24,10 +24,8 @@ const scene = new THREE.Scene();
 // import suzanne mesh
 
 let suzanne = null;
-const vertices = new Float32Array();
 
 gltfLoader.load('./suzanne.glb', (gltf) => {
-  console.log(gltf);
   suzanne = gltf.scene;
 });
 
@@ -105,7 +103,17 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
  * Fireworks
  */
 
-const createFireworks = (count, position, size, texture, radius, color) => {
+const createFireworks = (position, size, texture, radius, color, type) => {
+  let geometry = null;
+  let count = Math.round(400 + Math.random() * 1000);
+
+  if (type === 'suzanne') {
+    geometry = suzanne.children[0].geometry;
+    count = suzanne.children[0].geometry.attributes.position.count;
+  } else {
+    geometry = new THREE.BufferGeometry();
+  }
+
   const positionArray = new Float32Array(count * 3);
   const sizesArray = new Float32Array(count);
   const timeMultipliersArray = new Float32Array(count);
@@ -114,32 +122,33 @@ const createFireworks = (count, position, size, texture, radius, color) => {
     // need to create 1 spherical/obj
     const i3 = i * 3;
 
-    const spherical = new THREE.Spherical(
-      radius * (0.75 + Math.random() * 0.25),
-      Math.random() * Math.PI,
-      Math.random() * Math.PI * 2
-    );
+    if (type !== 'suzanne') {
+      const spherical = new THREE.Spherical(
+        radius * (0.75 + Math.random() * 0.25),
+        Math.random() * Math.PI,
+        Math.random() * Math.PI * 2
+      );
 
-    const position = new THREE.Vector3();
-    // position.setFromSpherical(spherical);
+      const position = new THREE.Vector3();
+      position.setFromSpherical(spherical);
 
-    positionArray[i3 + 0] = position.x;
-    positionArray[i3 + 1] = position.y;
-    positionArray[i3 + 2] = position.z;
+      positionArray[i3 + 0] = position.x;
+      positionArray[i3 + 1] = position.y;
+      positionArray[i3 + 2] = position.z;
+    }
 
     sizesArray[i] = Math.random();
 
     timeMultipliersArray[i] = 1 + Math.random(); // add the 1 so the random particles
     // lifespan is faster
   }
-  const geometry = suzanne.children[0].geometry;
-  console.log(geometry);
-  //
-  /* 
-  geometry.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute(suzanneArray, 3)
-  ); */
+  if (type !== 'suzanne') {
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positionArray, 3)
+    );
+  }
+
   geometry.setAttribute(
     'aSize',
     new THREE.Float32BufferAttribute(sizesArray, 1)
@@ -196,7 +205,6 @@ const createFireworks = (count, position, size, texture, radius, color) => {
 };
 
 const createRandomFirework = () => {
-  const count = 2886;
   const position = new THREE.Vector3(
     (Math.random() - 0.5) * 2,
     Math.random(),
@@ -210,8 +218,21 @@ const createRandomFirework = () => {
   const radius = 0.5 + Math.random();
   const color = new THREE.Color();
   color.setHSL(Math.random(), 1, 0.7); // use HSL for random colors
+  const typeI = Math.floor(Math.random() * 2);
+  let type = 'spherical';
+  switch (typeI) {
+    case 0:
+      type = 'suzanne';
+      break;
+    case 1:
+      type = 'spherical';
+      break;
+    default:
+      type = 'spherical';
+      break;
+  }
 
-  createFireworks(count, position, size, texture, radius, color);
+  createFireworks(position, size, texture, radius, color, type);
 };
 
 canvas.addEventListener('click', createRandomFirework);
