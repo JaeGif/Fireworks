@@ -102,7 +102,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 /**
  * Fireworks
  */
-
+const mousePosition = {
+  x: 0,
+  y: 0,
+};
+canvas.addEventListener('mousemove', (e) => {
+  mousePosition.x = (e.clientX / sizes.width) * 2 - 1;
+  mousePosition.y = -(e.clientY / sizes.height) * 2 + 1;
+});
 const createFireworks = (position, size, texture, radius, color, type) => {
   let geometry = null;
   let count = Math.round(400 + Math.random() * 1000);
@@ -121,7 +128,6 @@ const createFireworks = (position, size, texture, radius, color, type) => {
   for (let i = 0; i < count; i++) {
     // need to create 1 spherical/obj
     const i3 = i * 3;
-
     if (type !== 'suzanne') {
       const spherical = new THREE.Spherical(
         radius * (0.75 + Math.random() * 0.25),
@@ -182,6 +188,7 @@ const createFireworks = (position, size, texture, radius, color, type) => {
     Math.random() - 0.5,
     Math.random() - 0.5
   );
+
   firework.position.copy(position);
   scene.add(firework);
 
@@ -206,11 +213,10 @@ const createFireworks = (position, size, texture, radius, color, type) => {
 
 const createRandomFirework = () => {
   const position = new THREE.Vector3(
-    (Math.random() - 0.5) * 2,
-    Math.random(),
-    (Math.random() - 0.5) * 2
+    mousePosition.x * 2,
+    mousePosition.y * 2,
+    Math.random() * 4 - 1
   );
-
   const size = 0.1 + Math.random() * 0.1;
   // pick random texture
   const texture = textures[Math.floor(Math.random() * textures.length)];
