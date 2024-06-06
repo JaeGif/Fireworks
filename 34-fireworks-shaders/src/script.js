@@ -4,12 +4,16 @@ import GUI from 'lil-gui';
 import fireworkVertex from './shaders/vertex.glsl';
 import fireworkFragment from './shaders/fragment.glsl';
 import gsap from 'gsap';
+import { Sky } from 'three/addons/objects/Sky.js';
 
 /**
  * Base
  */
 // Debug
-const gui = new GUI({ width: 340 });
+
+let gui;
+
+if (window.location.hash === '#debug') gui = new GUI({ width: 340 });
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
@@ -90,10 +94,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 /**
  * Fireworks
  */
-const count = 100;
+
 const createFireworks = (count, position, size, texture, radius, color) => {
   const positionArray = new Float32Array(count * 3);
   const sizesArray = new Float32Array(count);
+  const timeMultipliersArray = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
     // need to create 1 spherical/obj
@@ -113,6 +118,9 @@ const createFireworks = (count, position, size, texture, radius, color) => {
     positionArray[i3 + 2] = position.z;
 
     sizesArray[i] = Math.random();
+
+    timeMultipliersArray[i] = 1 + Math.random(); // add the 1 so the random particles
+    // lifespan is faster
   }
   const geometry = new THREE.BufferGeometry();
 
@@ -123,6 +131,10 @@ const createFireworks = (count, position, size, texture, radius, color) => {
   geometry.setAttribute(
     'aSize',
     new THREE.Float32BufferAttribute(sizesArray, 1)
+  );
+  geometry.setAttribute(
+    'aTimeMultiplier',
+    new THREE.Float32BufferAttribute(timeMultipliersArray, 1)
   );
 
   // material
@@ -166,16 +178,75 @@ const createFireworks = (count, position, size, texture, radius, color) => {
   });
 };
 
-window.addEventListener('click', () =>
-  createFireworks(
-    count,
-    new THREE.Vector3(),
-    0.5,
-    textures[7],
-    1,
-    new THREE.Color('#8affff')
-  )
-);
+const createRandomFirework = () => {
+  const count = Math.round(400 + Math.random() * 1000);
+  const position = new THREE.Vector3(
+    (Math.random() - 0.5) * 2,
+    Math.random(),
+    (Math.random() - 0.5) * 2
+  );
+
+  const size = 0.1 + Math.random() * 0.1;
+  // pick random texture
+  const texture = textures[Math.floor(Math.random() * textures.length)];
+
+  const radius = 0.5 + Math.random();
+  const color = new THREE.Color();
+  color.setHSL(Math.random(), 1, 0.7); // use HSL for random colors
+
+  createFireworks(count, position, size, texture, radius, color);
+};
+
+canvas.addEventListener('click', createRandomFirework);
+
+// add the sky class for a nicer background
+// Sky
+
+const sky = new Sky();
+sky.scale.setScalar(450000);
+scene.add(sky);
+
+const sun = new THREE.Vector3();
+
+/// GUI
+
+const skyParameters = {
+  turbidity: 10,
+  rayleigh: 3,
+  mieCoefficient: 0.1,
+  mieDirectionalG: 0.95,
+  elevation: -2.15,
+  azimuth: 180,
+  exposure: renderer.toneMappingExposure,
+};
+
+function updateSky() {
+  const uniforms = sky.material.uniforms;
+  uniforms['turbidity'].value = skyParameters.turbidity;
+  uniforms['rayleigh'].value = skyParameters.rayleigh;
+  uniforms['mieCoefficient'].value = skyParameters.mieCoefficient;
+  uniforms['mieDirectionalG'].value = skyParameters.mieDirectionalG;
+
+  const phi = THREE.MathUtils.degToRad(90 - skyParameters.elevation);
+  const theta = THREE.MathUtils.degToRad(skyParameters.azimuth);
+
+  sun.setFromSphericalCoords(1, phi, theta);
+
+  uniforms['sunPosition'].value.copy(sun);
+
+  renderer.toneMappingExposure = skyParameters.exposure;
+  renderer.render(scene, camera);
+}
+if (gui) {
+  gui.add(skyParameters, 'turbidity', 0.0, 20.0, 0.1).onChange(updateSky);
+  gui.add(skyParameters, 'rayleigh', 0.0, 4, 0.001).onChange(updateSky);
+  gui.add(skyParameters, 'mieCoefficient', 0.0, 0.1, 0.001).onChange(updateSky);
+  gui.add(skyParameters, 'mieDirectionalG', 0.0, 1, 0.001).onChange(updateSky);
+  gui.add(skyParameters, 'elevation', -5, 10, 0.01).onChange(updateSky);
+  gui.add(skyParameters, 'azimuth', -180, 180, 0.1).onChange(updateSky);
+  gui.add(skyParameters, 'exposure', 0, 1, 0.0001).onChange(updateSky);
+}
+updateSky();
 
 /**
  * Animate
@@ -186,6 +257,7 @@ window.addEventListener('click', () =>
 // 3. Fall
 // 4. Scale down
 // 5. Twinkle out
+
 const tick = () => {
   // Update controls
   controls.update();
