@@ -217,7 +217,7 @@ const createRandomFirework = () => {
 
   const radius = 0.5 + Math.random();
   const color = new THREE.Color();
-  color.setHSL(Math.random(), 1, 0.7); // use HSL for random colors
+  color.setHSL(Math.random() * 360, 1, 0.55); // use HSL for random colors
   const typeI = Math.floor(Math.random() * 2);
   let type = 'spherical';
   switch (typeI) {
